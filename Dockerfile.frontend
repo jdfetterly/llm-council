@@ -1,0 +1,21 @@
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache git
+
+ARG LLM_COUNCIL_REF=master
+RUN git clone https://github.com/karpathy/llm-council.git /app \
+    && cd /app \
+    && git checkout "$LLM_COUNCIL_REF"
+
+# Override API base to use same host as frontend (Tailnet-friendly)
+COPY overrides/frontend/api.js /app/frontend/src/api.js
+
+WORKDIR /app/frontend
+RUN npm ci
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

@@ -1,0 +1,54 @@
+services:
+  llm-council:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: llm-council
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    networks:
+      - llm-council-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  llm-council-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: llm-council-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    networks:
+      - llm-council-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      - llm-council
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: llm-council-tunnel
+    restart: unless-stopped
+    profiles:
+      - public
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - llm-council-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      - llm-council-frontend
+
+networks:
+  llm-council-network:
+    driver: bridge
